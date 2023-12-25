@@ -3,11 +3,10 @@ package com.krasjbee.konturtestapp.domain
 import kotlinx.coroutines.flow.Flow
 
 interface PersonRepository {
+    suspend fun getPersonList(force: Boolean = false, pageSize: Int, page : Int): Result<List<Person>>
 
-    fun getPersonList(force: Boolean = false, pageSize: Int, page : Int): Flow<Result<List<Person>>>
+    suspend fun getPerson(personId: String): Result<Person>
 
-    fun getPerson(personId: String): Flow<Result<Person>>
-
-    fun searchPersons(searchQuery: String): Flow<Result<List<Person>>>
+    suspend fun searchPersons(searchQuery: String,pageSize: Int, page : Int): Result<List<Person>>
 
 }

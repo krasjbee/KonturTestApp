@@ -2,10 +2,14 @@ package com.krasjbee.konturtestapp.di
 
 import android.content.Context
 import com.krasjbee.konturtestapp.data.PersonRepositoryImpl
+import com.krasjbee.konturtestapp.data.cache.PagingCache
+import com.krasjbee.konturtestapp.data.cache.SharedPreferencesFetchTimeProvider
+import com.krasjbee.konturtestapp.data.cache.TimedPagingCache
 import com.krasjbee.konturtestapp.datasource.database.PersonDao
 import com.krasjbee.konturtestapp.datasource.database.PersonDatabase
 import com.krasjbee.konturtestapp.datasource.remote.NetworkClient
 import com.krasjbee.konturtestapp.datasource.remote.PersonApiClient
+import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
 import dagger.Binds
 import dagger.Module
@@ -38,4 +42,11 @@ abstract class BindModule {
     @Singleton
     abstract fun bindPersonRepository(impl: PersonRepositoryImpl): PersonRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindCache(impl : TimedPagingCache) : PagingCache<Person>
+
+    @Binds
+    @Singleton
+    abstract fun bindTimeFetchProvider(impl: SharedPreferencesFetchTimeProvider) : PagingCache.FetchTimeProvider
 }

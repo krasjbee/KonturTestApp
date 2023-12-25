@@ -1,11 +1,13 @@
 package com.krasjbee.konturtestapp.data
 
+import android.util.Log
 import com.krasjbee.konturtestapp.data.cache.PagingCache
 import com.krasjbee.konturtestapp.datasource.remote.PersonApiClient
 import com.krasjbee.konturtestapp.datasource.remote.PersonRemote
 import com.krasjbee.konturtestapp.datasource.remote.mapToPerson
 import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
+import com.krasjbee.konturtestapp.util.suspendRunCatching
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -16,33 +18,35 @@ class PersonRepositoryImpl @Inject constructor(
 ) : PersonRepository {
 
     private var shouldFetch = true
-    override fun getPersonList(
+    override suspend fun getPersonList(
         force: Boolean, pageSize: Int, page: Int
-    ): Flow<Result<List<Person>>> {
-        return flow {
+    ): Result<List<Person>> {
+        return suspendRunCatching {
             if ((shouldFetch && pagingCache.isExpired) || force) {
-                val data = runCatching {
-                    val response = apiClient.getPersonList("")
-                    val body = response.body()
-                    shouldFetch = false
-                    checkNotNull(body)
-                }
-                data.onSuccess {
+                Log.i("CacheEvent", "getPersonList: data should be fetched")
+
+                val response = apiClient.getPersonList("generated-01.json")
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    Log.i("CacheEvent", "getPersonList: response is successful")
                     pagingCache.clear()
-                    pagingCache.addAll(it.map(PersonRemote::mapToPerson) )
-                }.onFailure {
-//                    emit(data)
+                    pagingCache.addAll(body.map(PersonRemote::mapToPerson))
+                    shouldFetch = false
                 }
             }
-            if (!pagingCache.isEmpty) { emit(Result.success(pagingCache.getPage(pageSize, page))) }
+            pagingCache.getPage(pageSize, page)
         }
     }
 
-    override fun getPerson(personId: String): Flow<Result<Person>> {
-        TODO("Not yet implemented")
+    override suspend fun getPerson(personId: String): Result<Person> {
+        return runCatching { pagingCache.getItem(personId) }
     }
 
-    override fun searchPersons(searchQuery: String): Flow<Result<List<Person>>> {
+    override suspend fun searchPersons(
+        searchQuery: String,
+        pageSize: Int,
+        page: Int
+    ): Result<List<Person>> {
         TODO("Not yet implemented")
     }
 }

@@ -2,8 +2,9 @@ package com.krasjbee.konturtestapp.datasource.remote
 
 
 import com.google.gson.annotations.SerializedName
-import com.krasjbee.konturtestapp.domain.EducationPerion
+import com.krasjbee.konturtestapp.domain.EducationPeriod
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 data class EducationPeriodRemote(
     @SerializedName("start")
@@ -13,4 +14,4 @@ data class EducationPeriodRemote(
 )
 
 fun EducationPeriodRemote.mapToEducationPeriod() =
-    EducationPerion(Instant.parse(start), Instant.parse(end))
+    EducationPeriod(Instant.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(start)), Instant.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(end)))

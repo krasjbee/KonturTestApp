@@ -2,7 +2,7 @@ package com.krasjbee.konturtestapp.datasource.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.krasjbee.konturtestapp.domain.EducationPerion
+import com.krasjbee.konturtestapp.domain.EducationPeriod
 import com.krasjbee.konturtestapp.domain.Person
 import java.time.Instant
 
@@ -25,7 +25,7 @@ fun PersonLocal.mapToPerson(): Person = Person(
     name = name,
     biography = biography,
     temperament = temperament,
-    educationPeriod = EducationPerion(educationPeriodStart, educationPeriodEnd)
+    educationPeriod = EducationPeriod(educationPeriodStart, educationPeriodEnd)
 )
 
 fun Person.mapToLocal(): PersonLocal = PersonLocal(

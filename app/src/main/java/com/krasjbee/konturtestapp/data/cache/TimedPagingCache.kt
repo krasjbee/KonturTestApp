@@ -1,6 +1,7 @@
 package com.krasjbee.konturtestapp.data.cache
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import com.krasjbee.konturtestapp.datasource.database.PersonDao
 import com.krasjbee.konturtestapp.datasource.database.PersonLocal
@@ -46,7 +47,9 @@ class TimedPagingCache @Inject constructor(
 
     override suspend fun addAll(collection: List<Person>) {
         mutex.withLock {
+            Log.d("no data", "addAll: called ${collection.joinToString(separator = "\n")} ")
             dao.insertAll(collection.map(Person::mapToLocal))
+            fetchTimeProvider.lastFetchTime = System.currentTimeMillis()
             _isCacheEmpty = false
         }
     }

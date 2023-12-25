@@ -1,7 +1,5 @@
 package com.krasjbee.konturtestapp.domain
 
-import com.krasjbee.konturtestapp.domain.EducationPerion
-
 data class Person(
     val id: String,
     val name: String,
@@ -9,5 +7,5 @@ data class Person(
     val height: Double,
     val biography: String,
     val temperament: String,
-    val educationPeriod: EducationPerion
+    val educationPeriod: EducationPeriod
 )
