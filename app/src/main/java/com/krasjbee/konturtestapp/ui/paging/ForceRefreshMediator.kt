@@ -1,6 +1,5 @@
 package com.krasjbee.konturtestapp.ui.paging
 
-import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
@@ -9,13 +8,11 @@ import com.krasjbee.konturtestapp.domain.DataContainer
 
 /**
  * Remote mediator used as workaround for force refresh
- * @param onRefreshCall call used to initiate force refresh
  * @param pageFetchCall call used to fetch next pages
  */
 @OptIn(ExperimentalPagingApi::class)
 class ForceRefreshMediator<T : Any>(
-    private val onRefreshCall: suspend (pageSize: Int, page: Int) -> DataContainer<List<T>>,
-    private val pageFetchCall: suspend (pageSize: Int, page: Int) -> DataContainer<List<T>>,
+    private val pageFetchCall: suspend (force: Boolean, pageSize: Int, page: Int) -> DataContainer<List<T>>,
 ) : RemoteMediator<Int, T>() {
     // TODO: refactor
     override suspend fun initialize(): InitializeAction {
@@ -27,21 +24,41 @@ class ForceRefreshMediator<T : Any>(
         loadType: LoadType,
         state: PagingState<Int, T>
     ): MediatorResult {
-        Log.d("paging", "mediator\nload: loadType: $loadType\nstate: $state ")
-        if (loadType == LoadType.REFRESH) onRefreshCall(state.config.pageSize, 0)
-        val anchor = state.anchorPosition
-        if (loadType == LoadType.APPEND && anchor != null) {
-            val key1 = state.closestPageToPosition(anchor)?.nextKey
-            Log.d("paging", "load: $key1 ")
-            if (key1 != null) {
-                val result = pageFetchCall(state.config.pageSize, key1)
-                val data = result.getDataOrNull()
-                if ((result.hasData() && data != null && data.size < state.config.pageSize) || data?.isEmpty() == true) {
-                    return MediatorResult.Success(endOfPaginationReached = true)
+        val isForce = loadType == LoadType.REFRESH
+        val pageSize = state.config.pageSize
+        return when (loadType) {
+            LoadType.REFRESH -> refresh(isForce, pageSize, 0)
+            LoadType.PREPEND -> prepend()
+            LoadType.APPEND -> {
+                val nextPageKey = state.anchorPosition?.let {
+                    state.closestPageToPosition(it)?.nextKey
                 }
+                append(isForce, pageSize, nextPageKey)
             }
         }
-        if (loadType == LoadType.PREPEND) return MediatorResult.Success(true)
-        return MediatorResult.Success(false)
     }
+
+    private suspend fun refresh(isForce: Boolean, pageSize: Int, page: Int): MediatorResult {
+        val result = pageFetchCall(isForce, pageSize, page)
+        if (result.hasData()) {
+            return MediatorResult.Success(result.getDataOrNull()!!.size == pageSize)
+        }
+        return MediatorResult.Success(true)
+    }
+
+    private fun prepend(): MediatorResult.Success {
+        return MediatorResult.Success(true)
+    }
+
+    private suspend fun append(isForce: Boolean, pageSize: Int, page: Int?): MediatorResult {
+        if (page != null) {
+            val result = pageFetchCall(isForce, pageSize, page)
+            val data = result.getDataOrNull()
+            val isPaginationEndReached =
+                (result.hasData() && data != null && data.size < pageSize) || data?.isEmpty() == true
+            return MediatorResult.Success(isPaginationEndReached)
+        }
+        return MediatorResult.Success(true)
+    }
+
 }

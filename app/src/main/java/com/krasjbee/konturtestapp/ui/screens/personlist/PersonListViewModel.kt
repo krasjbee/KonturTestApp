@@ -47,15 +47,11 @@ class PersonListViewModel @Inject constructor(
         createPager(
             query,
             pagingConfig,
-            searchCall = { isForce, query, pageSize, page ->
-                repository.searchPersons(isForce, query, pageSize, page)
+            searchCall = { isForce, searchQuery, pageSize, page ->
+                repository.searchPersons(isForce, searchQuery, pageSize, page)
             },
             pageFetch = { force, pageSize, page ->
-                repository.getPersonList(
-                    force,
-                    pageSize,
-                    page
-                )
+                repository.getPersonList(force, pageSize, page)
             },
             onErrorOccurred = {
                 _error.value = it
@@ -80,24 +76,15 @@ class PersonListViewModel @Inject constructor(
                 pagingSourceFactory = {
                     GenericPagingSource { pageSize, page ->
                         pageFetch(
-                            false,
-                            pageSize,
-                            page
+                            false, pageSize, page
                         ).onHasError(onErrorOccurred)
                     }
                 },
-                remoteMediator = ForceRefreshMediator(
-                    onRefreshCall = { pageSize, page ->
-                        pageFetch(true, pageSize, page).onHasError(
-                            onErrorOccurred
-                        )
-                    },
-                    pageFetchCall = { pageSize, page ->
-                        pageFetch(false, pageSize, page).onHasError(
-                            onErrorOccurred
-                        )
-                    }
-                )
+                remoteMediator = ForceRefreshMediator { isForce, pageSize, page ->
+                    pageFetch(isForce, pageSize, page).onHasError(
+                        onErrorOccurred
+                    )
+                }
             )
         } else {
             Pager(
@@ -105,31 +92,15 @@ class PersonListViewModel @Inject constructor(
                 pagingSourceFactory = {
                     GenericPagingSource { pageSize, page ->
                         searchCall(
-                            false,
-                            query,
-                            pageSize,
-                            page
+                            false, query, pageSize, page
                         ).onHasError(onErrorOccurred)
                     }
                 },
-                remoteMediator = ForceRefreshMediator(
-                    onRefreshCall = { pageSize, page ->
-                        searchCall(
-                            true,
-                            query,
-                            pageSize,
-                            page
-                        ).onHasError(onErrorOccurred)
-                    },
-                    pageFetchCall = { pageSize, page ->
-                        searchCall(
-                            false,
-                            query,
-                            pageSize,
-                            page
-                        ).onHasError(onErrorOccurred)
-                    }
-                )
+                remoteMediator = ForceRefreshMediator { isForce, pageSize, page ->
+                    searchCall(
+                        isForce, query, pageSize, page
+                    ).onHasError(onErrorOccurred)
+                }
             )
         }
     }
