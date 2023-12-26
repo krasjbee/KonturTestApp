@@ -7,30 +7,31 @@ import com.krasjbee.konturtestapp.datasource.remote.PersonRemote
 import com.krasjbee.konturtestapp.datasource.remote.mapToPerson
 import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
-import com.krasjbee.konturtestapp.util.suspendRunCatching
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class PersonRepositoryImpl @Inject constructor(
     private val apiClient: PersonApiClient,
-    private val pagingCache: PagingCache<Person>
+    private val pagingCache: PagingCache<Person>,
+//    private val ioDispatcher : CoroutineDispatcher,
+//    private val cpuDispatcher: CoroutineDispatcher
 ) : PersonRepository {
+    private val files = listOf("generated-01.json", "generated-03.json", "generated-03.json")
 
     private var shouldFetch = true
     override suspend fun getPersonList(
         force: Boolean, pageSize: Int, page: Int
     ): Result<List<Person>> {
-        return suspendRunCatching {
+        return runCatching {
             if ((shouldFetch && pagingCache.isExpired) || force) {
                 Log.i("CacheEvent", "getPersonList: data should be fetched")
 
-                val response = apiClient.getPersonList("generated-01.json")
-                val body = response.body()
-                if (response.isSuccessful && body != null) {
-                    Log.i("CacheEvent", "getPersonList: response is successful")
-                    pagingCache.clear()
-                    pagingCache.addAll(body.map(PersonRemote::mapToPerson))
-                    shouldFetch = false
-                }
+                val files = files.map { processFile(it) }
+                pagingCache.clear()
+                files.forEach { pagingCache.addAll(it) }
+                shouldFetch = false
             }
             pagingCache.getPage(pageSize, page)
         }
@@ -46,6 +47,28 @@ class PersonRepositoryImpl @Inject constructor(
         pageSize: Int,
         page: Int
     ): Result<List<Person>> {
-        return runCatching { pagingCache.searchItem(searchQuery, pageSize, page) }
+        return runCatching {
+            if (force) {
+                val files = files.map { processFile(it) }
+                pagingCache.clear()
+                files.forEach { pagingCache.addAll(it) }
+                shouldFetch = false
+            }
+            pagingCache.searchItem(searchQuery, pageSize, page)
+        }
+    }
+
+    private suspend fun processFile(filename: String): List<Person> { // TODO: change return type to result or either
+        val response = apiClient.getPersonList(filename)
+        val body = response.body()
+        return coroutineScope {
+            withContext(Dispatchers.Default) {
+                if (response.isSuccessful && body != null) {
+                    body.map(PersonRemote::mapToPerson)
+                } else {
+                    emptyList()
+                }
+            }
+        }
     }
 }

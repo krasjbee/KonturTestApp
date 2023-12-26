@@ -2,12 +2,14 @@ package com.krasjbee.konturtestapp.ui.entities
 
 import androidx.compose.runtime.Stable
 import com.krasjbee.konturtestapp.domain.EducationPeriod
-import java.time.format.DateTimeFormatter
+
 @Stable
 data class EducationPeriodUI(
-    val start : String,
-    val end : String
-)
+    val start: String,
+    val end: String
+) {
+    val formattedPeriod = "$start - $end"
+}
 
 fun EducationPeriod.mapToUi() : EducationPeriodUI =
     EducationPeriodUI(start = "Stub start",

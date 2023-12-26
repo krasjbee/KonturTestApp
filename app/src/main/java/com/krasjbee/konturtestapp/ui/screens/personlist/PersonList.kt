@@ -18,22 +18,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
-import androidx.compose.material.TextField
+//import androidx.compose.material.TextField
+//import androidx.compose.material.TextFieldColors
+//import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
+//import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.PullRefreshState
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +59,11 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.krasjbee.konturtestapp.R
 import com.krasjbee.konturtestapp.ui.entities.PersonUI
+import com.krasjbee.konturtestapp.ui.screens.persondetails.PersonDetailsScreen
+import com.krasjbee.konturtestapp.ui.screens.persondetails.PersonDetailsViewModel
 import com.krasjbee.konturtestapp.ui.theme.KonturTestAppTheme
+import com.krasjbee.konturtestapp.ui.theme.grayText
+import com.krasjbee.konturtestapp.ui.theme.primary
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -59,15 +73,16 @@ fun PersonListScreen(
 ) {
     Column {
         val query = viewModel.searchQuery.collectAsStateWithLifecycle()
-        val isSearching = viewModel.isSearching.collectAsStateWithLifecycle()
+
         TopBar(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Green)
+                .background(primary)
                 .padding(horizontal = 16.dp),
             query = query.value,
             onQueryChange = { viewModel.setQuery(it) },
-            placeholderText = stringResource(R.string.search_placeholder)
+            placeholderText = stringResource(R.string.search_placeholder),
+            onQueryClear = { viewModel.clearQuery() }
         )
 
         val personList = viewModel.items.collectAsLazyPagingItems()
@@ -77,25 +92,30 @@ fun PersonListScreen(
         val pullRefreshState = rememberPullRefreshState(refreshing = loadingState.value,
             onRefresh = { personList.refresh() })
 
+        val show = rememberSaveable {
+            mutableStateOf(false)
+        }
 
-        RefreshableList(
-            modifier = Modifier.fillMaxSize(),
-            personList = personList,
-            pullRefreshState = pullRefreshState,
-            loadingState = loadingState,
-            onItemClick = {
-            }
-        )
+        if (!show.value) {
+            RefreshableList(
+                modifier = Modifier.fillMaxSize(),
+                personList = personList,
+                pullRefreshState = pullRefreshState,
+                loadingState = loadingState,
+                onItemClick = {
+                    show.value = true
+
+                }
+            )
+        } else {
+            PersonDetailsScreen(
+                viewModel = androidx.lifecycle.viewmodel.compose.viewModel<PersonDetailsViewModel>(
+                ) // TODO: remove
+            )
+        }
 
     }
 }
-
-/**
-CombinedLoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=NotLoading(endOfPaginationReached=false), source=LoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=NotLoading(endOfPaginationReached=false)), mediator=LoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=NotLoading(endOfPaginationReached=false)))
-CombinedLoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=NotLoading(endOfPaginationReached=false), source=LoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=Loading(endOfPaginationReached=false)), mediator=LoadStates(refresh=NotLoading(endOfPaginationReached=false), prepend=NotLoading(endOfPaginationReached=true), append=NotLoading(endOfPaginationReached=false)))
-
- *
- */
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -112,7 +132,8 @@ fun RefreshableList(
         PullRefreshIndicator(
             modifier = Modifier.align(Alignment.TopCenter),
             refreshing = loadingState.value,
-            state = pullRefreshState
+            state = pullRefreshState,
+            contentColor = MaterialTheme.colorScheme.primary
         )
 
         val isLoading =
@@ -125,12 +146,6 @@ fun RefreshableList(
         ) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
-
-        // TODO: add scroll
-//        val columnState = rememberLazyListState()
-//        if (personList.loadState.refresh == LoadState.Loading){
-//
-//        }
 
 
         if (personList.itemCount > 0) {
@@ -168,12 +183,7 @@ fun RefreshableList(
             }
 
         }
-
-//        AnimatedVisibility(visible = !isLoading, enter = fadeIn(), exit = fadeOut()) {
-//        }
-
     }
-
 }
 
 
@@ -182,8 +192,8 @@ fun TopBar(
     modifier: Modifier = Modifier,
     query: String,
     onQueryChange: (String) -> Unit,
+    onQueryClear: () -> Unit,
     placeholderText: String
-
 ) {
     Box(modifier = modifier) {
         TextField(modifier = Modifier.fillMaxWidth(),
@@ -191,25 +201,32 @@ fun TopBar(
             onValueChange = onQueryChange,
             shape = RectangleShape,
             leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = onQueryClear) {
+                        Icon(imageVector = Icons.Default.Clear, contentDescription = null)
+                    }
+                }
+            } else null,
             singleLine = true,
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Search,
             ),
-            placeholder = { Text(text = placeholderText) }
-//            keyboardActions = KeyboardActions()
+            placeholder = { Text(text = placeholderText) },
+            // TODO: placeholder colors?
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedPlaceholderColor = grayText,
+                unfocusedPlaceholderColor = grayText,
+                unfocusedIndicatorColor = grayText,
+                focusedLeadingIconColor = grayText,
+                unfocusedLeadingIconColor = grayText,
+                disabledLeadingIconColor = grayText,
+                errorLeadingIconColor = grayText
+
+            )
         )
-//        SearchBar(
-//            modifier = Modifier.fillMaxWidth(),
-//            query = query,
-//            onQueryChange = onQueryChange,
-//            onSearch = onSearch,
-//            active = active,
-//            onActiveChange = onActiveChange,
-//            shape = RectangleShape,
-//            leadingIcon = { Icon(imageVector = Icons.Default.Search,contentDescription = null) }
-//        ) {
-//
-//        }
     }
 }
 
@@ -219,11 +236,11 @@ fun PersonItem(
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
-            Text(text = name)
+            Text(text = name, style = MaterialTheme.typography.bodyLarge)
             Spacer(modifier = Modifier.size(4.dp))
-            Text(text = phone)
+            Text(text = phone, style = MaterialTheme.typography.bodyMedium)
         }
-        Text(text = height)
+        Text(text = height, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

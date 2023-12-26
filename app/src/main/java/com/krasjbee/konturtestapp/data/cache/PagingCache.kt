@@ -2,6 +2,9 @@ package com.krasjbee.konturtestapp.data.cache
 
 import com.krasjbee.konturtestapp.domain.Person
 
+/**
+ * Cache which supports getting data by pages
+ */
 interface PagingCache<Data> {
     val isExpired: Boolean
 
@@ -20,6 +23,9 @@ interface PagingCache<Data> {
         searchQuery: String, pageSize: Int, page: Int
     ): List<Person>
 
+    /**
+     * Provides time of last fetch
+     */
     interface FetchTimeProvider {
         var lastFetchTime: Long
     }

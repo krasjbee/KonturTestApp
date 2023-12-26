@@ -1,11 +1,11 @@
-package com.krasjbee.konturtestapp.data
+package com.krasjbee.konturtestapp.ui.paging
 
 import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import javax.inject.Inject
 
-class PersonPagingSource<T : Any> @Inject constructor(private val call: suspend (pageSize: Int, page: Int) -> Result<List<T>>) :
+class GenericPagingSource<T : Any> @Inject constructor(private val call: suspend (pageSize: Int, page: Int) -> Result<List<T>>) :
     PagingSource<Int, T>() {
     override fun getRefreshKey(state: PagingState<Int, T>): Int? {
         Log.d("paging", "paging source :\n getRefreshKey: $state ")

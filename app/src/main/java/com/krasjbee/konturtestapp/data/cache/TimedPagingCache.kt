@@ -73,7 +73,9 @@ class TimedPagingCache @Inject constructor(
     }
 }
 
-
+/**
+ * Provides last fetch time using sharedpreferences as storage
+ */
 class SharedPreferencesFetchTimeProvider @Inject constructor(@ApplicationContext context: Context) :
     PagingCache.FetchTimeProvider {
 

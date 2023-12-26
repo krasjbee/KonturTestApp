@@ -11,21 +11,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-/**
- * colorPrimary — #4c9069
- * colorPrimaryDark — #3d7254
- * colorAccent — #4d8f69
- * Черный текст — #e5000000
- * Серый текст — #8a000000
- * Кликабельный текст — #269df7
- */
 
-val primary = Color(0xff4c9069)
-val colorPrimaryDark = Color(0xff3d7254)
-val colorAccent = Color(0xff4d8f69)
-val blackText = Color(0xe5000000)
-val grayText = Color(0x8a000000)
-val clickableText = Color(0xff269df7)
 
 //private val DarkColorScheme = darkColorScheme(
 //    primary = Purple80,
@@ -61,10 +47,11 @@ fun KonturTestAppTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            window.statusBarColor = colorPrimaryDark.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
         }
     }
+
 
     MaterialTheme(
         colorScheme = colorScheme,
