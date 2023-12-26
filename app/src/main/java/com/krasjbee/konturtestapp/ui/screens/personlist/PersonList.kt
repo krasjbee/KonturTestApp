@@ -1,5 +1,9 @@
 package com.krasjbee.konturtestapp.ui.screens.personlist
 
+//import androidx.compose.material.TextField
+//import androidx.compose.material.TextFieldColors
+//import androidx.compose.material.TextFieldDefaults
+//import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -23,14 +27,10 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
-//import androidx.compose.material.TextField
-//import androidx.compose.material.TextFieldColors
-//import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
-//import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.PullRefreshState
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -41,9 +41,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
@@ -59,8 +58,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.krasjbee.konturtestapp.R
 import com.krasjbee.konturtestapp.ui.entities.PersonUI
-import com.krasjbee.konturtestapp.ui.screens.persondetails.PersonDetailsScreen
-import com.krasjbee.konturtestapp.ui.screens.persondetails.PersonDetailsViewModel
 import com.krasjbee.konturtestapp.ui.theme.KonturTestAppTheme
 import com.krasjbee.konturtestapp.ui.theme.grayText
 import com.krasjbee.konturtestapp.ui.theme.primary
@@ -69,7 +66,8 @@ import com.krasjbee.konturtestapp.ui.theme.primary
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersonListScreen(
-    viewModel: PersonListViewModel
+    viewModel: PersonListViewModel = hiltViewModel(),
+    onItemClick: (String) -> Unit
 ) {
     Column {
         val query = viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -78,7 +76,7 @@ fun PersonListScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(primary)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             query = query.value,
             onQueryChange = { viewModel.setQuery(it) },
             placeholderText = stringResource(R.string.search_placeholder),
@@ -92,34 +90,20 @@ fun PersonListScreen(
         val pullRefreshState = rememberPullRefreshState(refreshing = loadingState.value,
             onRefresh = { personList.refresh() })
 
-        val show = rememberSaveable {
-            mutableStateOf(false)
-        }
-
-        if (!show.value) {
-            RefreshableList(
-                modifier = Modifier.fillMaxSize(),
-                personList = personList,
-                pullRefreshState = pullRefreshState,
-                loadingState = loadingState,
-                onItemClick = {
-                    show.value = true
-
-                }
-            )
-        } else {
-            PersonDetailsScreen(
-                viewModel = androidx.lifecycle.viewmodel.compose.viewModel<PersonDetailsViewModel>(
-                ) // TODO: remove
-            )
-        }
+        RefreshableList(
+            modifier = Modifier.fillMaxSize(),
+            personList = personList,
+            pullRefreshState = pullRefreshState,
+            loadingState = loadingState,
+            onItemClick = onItemClick
+        )
 
     }
 }
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun RefreshableList(
+private fun RefreshableList(
     modifier: Modifier = Modifier,
     personList: LazyPagingItems<PersonUI>,
     pullRefreshState: PullRefreshState,
@@ -188,7 +172,7 @@ fun RefreshableList(
 
 
 @Composable
-fun TopBar(
+private fun TopBar(
     modifier: Modifier = Modifier,
     query: String,
     onQueryChange: (String) -> Unit,
@@ -196,7 +180,8 @@ fun TopBar(
     placeholderText: String
 ) {
     Box(modifier = modifier) {
-        TextField(modifier = Modifier.fillMaxWidth(),
+        TextField(
+            modifier = Modifier.fillMaxWidth(),
             value = query,
             onValueChange = onQueryChange,
             shape = RectangleShape,
@@ -231,7 +216,7 @@ fun TopBar(
 }
 
 @Composable
-fun PersonItem(
+private fun PersonItem(
     modifier: Modifier = Modifier, name: String, phone: String, height: String
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.SpaceBetween) {

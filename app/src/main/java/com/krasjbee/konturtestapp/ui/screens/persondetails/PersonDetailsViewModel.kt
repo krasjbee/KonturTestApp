@@ -18,8 +18,7 @@ class PersonDetailsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    //    private val id: String = checkNotNull(savedStateHandle["personId"])
-    private val id: String = "5bbb009d5d052e0b9258c316"
+    private val id: String = checkNotNull(savedStateHandle["personId"])
 
     init {
         getPersonById(id)

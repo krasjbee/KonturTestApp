@@ -2,9 +2,13 @@ package com.krasjbee.konturtestapp.ui.screens.persondetails
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -20,23 +24,29 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.krasjbee.konturtestapp.ui.entities.PersonUI
 import com.krasjbee.konturtestapp.ui.theme.grayText
 
 @Composable
 fun PersonDetailsScreen(
-    viewModel: PersonDetailsViewModel
+    viewModel: PersonDetailsViewModel = hiltViewModel(),
+    onBackButtonClick: () -> Unit
 ) {
     val screenState = viewModel.screenState.collectAsStateWithLifecycle()
-    when (screenState.value) {
-        is PersonDetailsState.PersonDetailsError -> {}
-        PersonDetailsState.PersonDetailsLoading -> {}
-        is PersonDetailsState.PersonDetailsSuccess ->
-            DetailsSuccess(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                person = (screenState.value as PersonDetailsState.PersonDetailsSuccess).person
-            )
+    Column {
+        DetailsTopBar(onBackButtonClick = onBackButtonClick)
+
+        when (screenState.value) {
+            is PersonDetailsState.PersonDetailsError -> {}
+            PersonDetailsState.PersonDetailsLoading -> {}
+            is PersonDetailsState.PersonDetailsSuccess ->
+                DetailsSuccess(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    person = (screenState.value as PersonDetailsState.PersonDetailsSuccess).person // TODO: fix
+                )
+        }
     }
 }
 
@@ -47,6 +57,7 @@ private fun DetailsSuccess(
 ) {
     Column(modifier = modifier) {
         val context = LocalContext.current
+        Spacer(modifier = Modifier.size(16.dp))
         Text(text = person.name, style = MaterialTheme.typography.titleLarge)
         val clickableText = buildAnnotatedString {
             val text = person.phone
@@ -55,6 +66,7 @@ private fun DetailsSuccess(
                 append(text)
             }
         }
+        Spacer(modifier = Modifier.size(8.dp))
         ClickableText(text = clickableText, onClick = { offset ->
             clickableText.getStringAnnotations(offset, offset).firstOrNull()?.let {
                 val intent = Intent(Intent.ACTION_DIAL).apply {
@@ -64,25 +76,40 @@ private fun DetailsSuccess(
             }
         }, style = MaterialTheme.typography.bodyMedium)
 //        Text(text = person.phone)
+        Spacer(modifier = Modifier.size(8.dp))
+
         Text(
             text = person.temperament,
             style = MaterialTheme.typography.bodyMedium.copy(color = grayText)
         )
+        Spacer(modifier = Modifier.size(8.dp))
+
         Text(
             text = person.educationPeriodUi.formattedPeriod,
             style = MaterialTheme.typography.bodyMedium.copy(color = grayText)
         )
+        Spacer(modifier = Modifier.size(8.dp))
+
         Text(text = person.biography, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
 private fun DetailsTopBar(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBackButtonClick: () -> Unit
 ) {
-    Row {
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
+        IconButton(onClick = onBackButtonClick) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = null,
+                tint = Color.White
+            )
         }
     }
 }
