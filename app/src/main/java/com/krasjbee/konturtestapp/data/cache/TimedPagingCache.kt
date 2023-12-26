@@ -28,6 +28,8 @@ class TimedPagingCache @Inject constructor(
         get() = System.currentTimeMillis() - fetchTimeProvider.lastFetchTime > CACHE_EXPIRE_INTERVAL
 
     override suspend fun getItem(key: Any): Person {
+        Log.i("cacheEvent", "getItem: ")
+
         return mutex.withLock {
             dao.getPersonInfo(key as String).mapToPerson()
         }
@@ -39,6 +41,7 @@ class TimedPagingCache @Inject constructor(
     private var _isCacheEmpty: Boolean = true
 
     override suspend fun clear() {
+        Log.i("cacheEvent", "clear: ")
         mutex.withLock {
             dao.clear()
             _isCacheEmpty = true
@@ -47,7 +50,7 @@ class TimedPagingCache @Inject constructor(
 
     override suspend fun addAll(collection: List<Person>) {
         mutex.withLock {
-            Log.d("no data", "addAll: called ${collection.joinToString(separator = "\n")} ")
+            Log.i("cacheEvent", "addAll: ")
             dao.insertAll(collection.map(Person::mapToLocal))
             fetchTimeProvider.lastFetchTime = System.currentTimeMillis()
             _isCacheEmpty = false
@@ -55,7 +58,18 @@ class TimedPagingCache @Inject constructor(
     }
 
     override suspend fun getPage(pageSize: Int, page: Int): List<Person> {
-        return mutex.withLock { dao.getPersonList(pageSize, page).map(PersonLocal::mapToPerson) }
+        Log.i("cacheEvent", "getPage pageSize $pageSize page $page")
+        return mutex.withLock {
+            dao.getPersonList(pageSize, page).map(PersonLocal::mapToPerson)
+        }
+    }
+
+    override suspend fun searchItem(
+        searchQuery: String, pageSize: Int, page: Int
+    ): List<Person> {
+        return mutex.withLock {
+            dao.searchPersons(searchQuery, pageSize, page).map(PersonLocal::mapToPerson)
+        }
     }
 }
 

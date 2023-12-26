@@ -8,8 +8,6 @@ import com.krasjbee.konturtestapp.datasource.remote.mapToPerson
 import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
 import com.krasjbee.konturtestapp.util.suspendRunCatching
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class PersonRepositoryImpl @Inject constructor(
@@ -43,10 +41,11 @@ class PersonRepositoryImpl @Inject constructor(
     }
 
     override suspend fun searchPersons(
+        force: Boolean,
         searchQuery: String,
         pageSize: Int,
         page: Int
     ): Result<List<Person>> {
-        TODO("Not yet implemented")
+        return runCatching { pagingCache.searchItem(searchQuery, pageSize, page) }
     }
 }
