@@ -32,10 +32,10 @@ class PersonDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             val person = repository.getPerson(id)
             person
-                .onSuccess {
+                .onHasData {
                     _screenState.value = PersonDetailsState.PersonDetailsSuccess(it.mapToUi())
                 }
-                .onFailure {
+                .onHasError {
                     _screenState.value = PersonDetailsState.PersonDetailsError()
                 }
         }

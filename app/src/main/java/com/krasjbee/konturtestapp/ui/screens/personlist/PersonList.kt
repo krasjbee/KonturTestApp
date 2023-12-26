@@ -26,6 +26,7 @@ import androidx.compose.material.Divider
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Snackbar
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -90,6 +91,8 @@ fun PersonListScreen(
         val pullRefreshState = rememberPullRefreshState(refreshing = loadingState.value,
             onRefresh = { personList.refresh() })
 
+        val error = viewModel.error.collectAsStateWithLifecycle()
+
         RefreshableList(
             modifier = Modifier.fillMaxSize(),
             personList = personList,
@@ -97,6 +100,11 @@ fun PersonListScreen(
             loadingState = loadingState,
             onItemClick = onItemClick
         )
+        if (error.value != null) {
+            Snackbar {
+                Text(text = error.value?.message ?: "NO MESSAGE")
+            }
+        }
 
     }
 }

@@ -1,5 +1,6 @@
 package com.krasjbee.konturtestapp.ui.screens.personlist
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.ExperimentalPagingApi
@@ -8,6 +9,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.krasjbee.konturtestapp.domain.DataContainer
 import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
 import com.krasjbee.konturtestapp.ui.entities.mapToUi
@@ -38,12 +40,27 @@ class PersonListViewModel @Inject constructor(
         setQuery("")
     }
 
+    private val _error = MutableStateFlow<Exception?>(null)
+    val error = _error.asStateFlow()
+
     val items = _searchQuery.debounce(500).flatMapLatest { query ->
         createPager(
             query,
             pagingConfig,
-            searchCall = repository::searchPersons,
-            pageFetch = repository::getPersonList
+            searchCall = { isForce, query, pageSize, page ->
+                repository.searchPersons(isForce, query, pageSize, page)
+            },
+            pageFetch = { force, pageSize, page ->
+                repository.getPersonList(
+                    force,
+                    pageSize,
+                    page
+                )
+            },
+            onErrorOccurred = {
+                _error.value = it
+                Log.d("errorhandling", " ${it.message ?: "No message"} ")
+            }
         ).flow.map { value: PagingData<Person> ->
             value.map { it.mapToUi() }
         }
@@ -53,18 +70,33 @@ class PersonListViewModel @Inject constructor(
     private fun createPager(
         query: String,
         pagingConfig: PagingConfig,
-        searchCall: suspend (isForce: Boolean, query: String, pageSize: Int, page: Int) -> Result<List<Person>>,
-        pageFetch: suspend (isForce: Boolean, pageSize: Int, page: Int) -> Result<List<Person>>,
+        searchCall: suspend (isForce: Boolean, query: String, pageSize: Int, page: Int) -> DataContainer<List<Person>>,
+        pageFetch: suspend (isForce: Boolean, pageSize: Int, page: Int) -> DataContainer<List<Person>>,
+        onErrorOccurred: (Exception) -> Unit = {}
     ): Pager<Int, Person> {
         return if (query.isBlank()) {
             Pager(
                 config = pagingConfig,
                 pagingSourceFactory = {
-                    GenericPagingSource { pageSize, page -> pageFetch(false, pageSize, page) }
+                    GenericPagingSource { pageSize, page ->
+                        pageFetch(
+                            false,
+                            pageSize,
+                            page
+                        ).onHasError(onErrorOccurred)
+                    }
                 },
                 remoteMediator = ForceRefreshMediator(
-                    onRefreshCall = { pageSize, page -> pageFetch(true, pageSize, page) },
-                    pageFetchCall = { pageSize, page -> pageFetch(false, pageSize, page) }
+                    onRefreshCall = { pageSize, page ->
+                        pageFetch(true, pageSize, page).onHasError(
+                            onErrorOccurred
+                        )
+                    },
+                    pageFetchCall = { pageSize, page ->
+                        pageFetch(false, pageSize, page).onHasError(
+                            onErrorOccurred
+                        )
+                    }
                 )
             )
         } else {
@@ -77,12 +109,26 @@ class PersonListViewModel @Inject constructor(
                             query,
                             pageSize,
                             page
-                        )
+                        ).onHasError(onErrorOccurred)
                     }
                 },
                 remoteMediator = ForceRefreshMediator(
-                    onRefreshCall = { pageSize, page -> searchCall(true, query, pageSize, page) },
-                    pageFetchCall = { pageSize, page -> searchCall(false, query, pageSize, page) }
+                    onRefreshCall = { pageSize, page ->
+                        searchCall(
+                            true,
+                            query,
+                            pageSize,
+                            page
+                        ).onHasError(onErrorOccurred)
+                    },
+                    pageFetchCall = { pageSize, page ->
+                        searchCall(
+                            false,
+                            query,
+                            pageSize,
+                            page
+                        ).onHasError(onErrorOccurred)
+                    }
                 )
             )
         }

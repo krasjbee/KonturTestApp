@@ -5,14 +5,14 @@ interface PersonRepository {
         force: Boolean = false,
         pageSize: Int,
         page: Int
-    ): Result<List<Person>>
+    ): DataContainer<List<Person>>
 
-    suspend fun getPerson(personId: String): Result<Person>
+    suspend fun getPerson(personId: String): DataContainer<Person>
 
     suspend fun searchPersons(
         force: Boolean = false,
         searchQuery: String,
         pageSize: Int,
         page: Int
-    ): Result<List<Person>>
+    ): DataContainer<List<Person>>
 }

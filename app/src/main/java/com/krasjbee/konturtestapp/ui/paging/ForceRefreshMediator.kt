@@ -5,6 +5,7 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
+import com.krasjbee.konturtestapp.domain.DataContainer
 
 /**
  * Remote mediator used as workaround for force refresh
@@ -13,16 +14,19 @@ import androidx.paging.RemoteMediator
  */
 @OptIn(ExperimentalPagingApi::class)
 class ForceRefreshMediator<T : Any>(
-    private val onRefreshCall: suspend (pageSize: Int, page: Int) -> Result<List<T>>,
-    private val pageFetchCall: suspend (pageSize: Int, page: Int) -> Result<List<T>>,
+    private val onRefreshCall: suspend (pageSize: Int, page: Int) -> DataContainer<List<T>>,
+    private val pageFetchCall: suspend (pageSize: Int, page: Int) -> DataContainer<List<T>>,
 ) : RemoteMediator<Int, T>() {
-
+    // TODO: refactor
     override suspend fun initialize(): InitializeAction {
         //no need to do initial refresh. this logic is encapsulated in cache
         return InitializeAction.SKIP_INITIAL_REFRESH
     }
 
-    override suspend fun load(loadType: LoadType, state: PagingState<Int, T>): MediatorResult {
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, T>
+    ): MediatorResult {
         Log.d("paging", "mediator\nload: loadType: $loadType\nstate: $state ")
         if (loadType == LoadType.REFRESH) onRefreshCall(state.config.pageSize, 0)
         val anchor = state.anchorPosition
@@ -31,8 +35,8 @@ class ForceRefreshMediator<T : Any>(
             Log.d("paging", "load: $key1 ")
             if (key1 != null) {
                 val result = pageFetchCall(state.config.pageSize, key1)
-                val data = result.getOrNull()
-                if ((result.isSuccess && data != null && data.size < state.config.pageSize) || data?.isEmpty() == true) {
+                val data = result.getDataOrNull()
+                if ((result.hasData() && data != null && data.size < state.config.pageSize) || data?.isEmpty() == true) {
                     return MediatorResult.Success(endOfPaginationReached = true)
                 }
             }
