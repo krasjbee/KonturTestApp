@@ -2,6 +2,8 @@ package com.krasjbee.konturtestapp.ui.entities
 
 import androidx.compose.runtime.Stable
 import com.krasjbee.konturtestapp.domain.EducationPeriod
+import com.krasjbee.konturtestapp.util.APP_DATE_FORMATTER
+import java.time.ZoneId
 
 @Stable
 data class EducationPeriodUI(
@@ -11,9 +13,8 @@ data class EducationPeriodUI(
     val formattedPeriod = "$start - $end"
 }
 
-fun EducationPeriod.mapToUi() : EducationPeriodUI =
-    EducationPeriodUI(start = "Stub start",
-//    DateTimeFormatter.ISO_DATE.format(start),
-        end = "Stub end"
-//        DateTimeFormatter.ISO_DATE.format(end)
-    ) // TODO: fix
+fun EducationPeriod.mapToUi(): EducationPeriodUI =
+    EducationPeriodUI(
+        start = APP_DATE_FORMATTER.withZone(ZoneId.systemDefault()).format(start),
+        end = APP_DATE_FORMATTER.withZone(ZoneId.systemDefault()).format(end)
+    )

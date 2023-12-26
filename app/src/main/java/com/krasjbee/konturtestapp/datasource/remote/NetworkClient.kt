@@ -11,11 +11,11 @@ object NetworkClient {
 
     private val client = OkHttpClient().newBuilder()
         .addInterceptor(HttpLoggingInterceptor().apply {
-            setLevel(HttpLoggingInterceptor.Level.HEADERS)
+            setLevel(HttpLoggingInterceptor.Level.BODY)
         }).build()
 
 
-    val retrofit =
+    val retrofit: Retrofit =
         Retrofit.Builder().client(client).baseUrl(BASE_URL)
             .addConverterFactory(
                 GsonConverterFactory.create()
