@@ -14,5 +14,5 @@
 
 ## Скриншоты
 
-![Screenshot_20231227_111536.png](screenshots/Screenshot_20231227_111536.png)![Screenshot_20231227_111555.png](screenshots/Screenshot_20231227_111555.png)
+<img src="https://raw.githubusercontent.com/krasjbee/KonturTestApp/main/screenshots/Screenshot_20231227_111536.png" width=50% height=50%><img src="https://raw.githubusercontent.com/krasjbee/KonturTestApp/main/screenshots/Screenshot_20231227_111555.png" width=50% height=50%>
 
