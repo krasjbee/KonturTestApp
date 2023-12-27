@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">KonturTestApp</string>
     <string name="search_placeholder">Поиск</string>
+    <string name="nothig_was_found">Ничего не найдено</string>
+    <string name="no_connection">Нет подключения к сети</string>
 </resources>

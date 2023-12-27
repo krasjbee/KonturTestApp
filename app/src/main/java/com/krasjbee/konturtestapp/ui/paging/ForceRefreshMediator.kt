@@ -4,7 +4,7 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
-import com.krasjbee.konturtestapp.domain.DataContainer
+import com.krasjbee.konturtestapp.domain.DataHolder
 
 /**
  * Remote mediator used as workaround for force refresh
@@ -12,7 +12,7 @@ import com.krasjbee.konturtestapp.domain.DataContainer
  */
 @OptIn(ExperimentalPagingApi::class)
 class ForceRefreshMediator<T : Any>(
-    private val pageFetchCall: suspend (force: Boolean, pageSize: Int, page: Int) -> DataContainer<List<T>>,
+    private val pageFetchCall: suspend (force: Boolean, pageSize: Int, page: Int) -> DataHolder<List<T>>,
 ) : RemoteMediator<Int, T>() {
     // TODO: refactor
     override suspend fun initialize(): InitializeAction {

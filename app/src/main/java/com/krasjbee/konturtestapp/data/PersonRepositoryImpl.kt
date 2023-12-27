@@ -4,7 +4,7 @@ import com.krasjbee.konturtestapp.data.cache.PagingCache
 import com.krasjbee.konturtestapp.datasource.remote.PersonApiClient
 import com.krasjbee.konturtestapp.datasource.remote.PersonRemote
 import com.krasjbee.konturtestapp.datasource.remote.mapToPerson
-import com.krasjbee.konturtestapp.domain.DataContainer
+import com.krasjbee.konturtestapp.domain.DataHolder
 import com.krasjbee.konturtestapp.domain.Person
 import com.krasjbee.konturtestapp.domain.PersonRepository
 import com.krasjbee.konturtestapp.util.suspendRunCatching
@@ -24,60 +24,62 @@ class PersonRepositoryImpl @Inject constructor(
     private var shouldFetch = true
     override suspend fun getPersonList(
         force: Boolean, pageSize: Int, page: Int
-    ): DataContainer<List<Person>> {
+    ): DataHolder<List<Person>> {
         if ((shouldFetch && pagingCache.isExpired) || force) {
             val fetchedDataResult = files.map { processFile(it) }
             val isSuccessFull = fetchedDataResult.all { it.isSuccess }
+            val firstThrowable = fetchedDataResult.firstOrNull()?.exceptionOrNull()
             return when {
                 isSuccessFull -> {
                     refillCache(fetchedDataResult.map { it.getOrNull()!! })
-                    return DataContainer.Data(pagingCache.getPage(pageSize, page))
+                    return DataHolder.Data(pagingCache.getPage(pageSize, page))
                 }
 
-                !pagingCache.isEmpty -> {
-                    DataContainer.DataWithError(
+                !pagingCache.isCacheEmpty() -> {
+                    DataHolder.DataWithError(
                         pagingCache.getPage(pageSize, page),
-                        Exception("Stub")
+                        firstThrowable
                     )
                 }
 
                 else -> {
-                    DataContainer.NoData(Exception("Stub"))
+                    DataHolder.NoData(firstThrowable)
                 }
             }
         }
-        return DataContainer.Data(pagingCache.getPage(pageSize, page))
+        return DataHolder.Data(pagingCache.getPage(pageSize, page))
     }
 
-    override suspend fun getPerson(personId: String): DataContainer<Person> {
-        return DataContainer.Data(pagingCache.getItem(personId))
+    override suspend fun getPerson(personId: String): DataHolder<Person> {
+        return DataHolder.Data(pagingCache.getItem(personId))
     }
 
     override suspend fun searchPersons(
         force: Boolean, searchQuery: String, pageSize: Int, page: Int
-    ): DataContainer<List<Person>> {
+    ): DataHolder<List<Person>> {
         val fetchedDataResult = files.map { processFile(it) }
         val isSuccessful = fetchedDataResult.all { it.isSuccess }
+        val firstError = fetchedDataResult.map { it.exceptionOrNull() }.firstOrNull()
         if (force) {
             return when {
                 isSuccessful -> {
                     refillCache(fetchedDataResult.map { it.getOrNull()!! })
-                    return DataContainer.Data(pagingCache.searchItem(searchQuery, pageSize, page))
+                    return DataHolder.Data(pagingCache.searchItem(searchQuery, pageSize, page))
                 }
 
-                !pagingCache.isEmpty -> DataContainer.DataWithError(
+                !pagingCache.isCacheEmpty() -> DataHolder.DataWithError(
                     pagingCache.searchItem(
                         searchQuery,
                         pageSize,
                         page
-                    ), Exception("Stub")
+                    ), firstError
                 )
 
-                else -> DataContainer.NoData(Exception("Stub"))
+                else -> DataHolder.NoData(firstError)
             }
         }
 
-        return DataContainer.Data(pagingCache.searchItem(searchQuery, pageSize, page))
+        return DataHolder.Data(pagingCache.searchItem(searchQuery, pageSize, page))
 
     }
 

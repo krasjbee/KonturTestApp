@@ -1,12 +1,27 @@
 package com.krasjbee.konturtestapp.domain
 
-sealed class DataContainer<T> {
+sealed class DataHolder<T> {
 
-    class NoData<T>(val error: Exception) : DataContainer<T>()
-    class Data<T>(val data: T) : DataContainer<T>()
-    class DataWithError<T>(val data: T, val error: Exception) : DataContainer<T>()
+    class NoData<T>(val error: Throwable?) : DataHolder<T>()
+    class Data<T>(val data: T) : DataHolder<T>()
+    class DataWithError<T>(val data: T, val error: Throwable?) : DataHolder<T>()
 
-    inline fun onHasData(block: (T) -> Unit): DataContainer<T> {
+    inline fun onData(block: (T) -> Unit): DataHolder<T> {
+        if (this is Data) block(data)
+        return this
+    }
+
+    inline fun onNoData(block: (Throwable?) -> Unit): DataHolder<T> {
+        if (this is NoData) block(error)
+        return this
+    }
+
+    inline fun onDataWithError(block: (data: T, error: Throwable?) -> Unit): DataHolder<T> {
+        if (this is DataWithError) block(data, error)
+        return this
+    }
+
+    inline fun onHasData(block: (T) -> Unit): DataHolder<T> {
         when (this) {
             is Data -> block(data)
             is DataWithError -> block(data)
@@ -15,7 +30,7 @@ sealed class DataContainer<T> {
         return this
     }
 
-    inline fun onHasError(block: (Exception) -> Unit): DataContainer<T> {
+    inline fun onHasError(block: (Throwable?) -> Unit): DataHolder<T> {
         when (this) {
             is Data -> Unit
             is DataWithError -> block(error)
@@ -24,7 +39,7 @@ sealed class DataContainer<T> {
         return this
     }
 
-    inline fun <R> transformData(transformer: (data: T) -> R): DataContainer<R> {
+    inline fun <R> transformData(transformer: (data: T) -> R): DataHolder<R> {
         return when (this) {
             is Data -> Data(transformer(data))
             is DataWithError -> DataWithError(transformer(data), error)
@@ -44,7 +59,7 @@ sealed class DataContainer<T> {
         }
     }
 
-    fun getExceptionOrNull(): Exception? {
+    fun getThrowableOrNull(): Throwable? {
         return when (this) {
             is Data -> null
             is DataWithError -> error

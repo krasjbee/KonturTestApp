@@ -1,10 +1,6 @@
 package com.krasjbee.konturtestapp.ui.screens.personlist
 
-//import androidx.compose.material.TextField
-//import androidx.compose.material.TextFieldColors
-//import androidx.compose.material.TextFieldDefaults
-//import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import android.util.Log
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,11 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +24,11 @@ import androidx.compose.material.Divider
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Snackbar
+import androidx.compose.material.SnackbarDuration
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -40,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
@@ -64,48 +67,77 @@ import com.krasjbee.konturtestapp.ui.theme.grayText
 import com.krasjbee.konturtestapp.ui.theme.primary
 
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun PersonListScreen(
-    viewModel: PersonListViewModel = hiltViewModel(),
+    viewModel: PersonListViewModel = hiltViewModel(), onItemClick: (String) -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val queryState = viewModel.searchQuery.collectAsStateWithLifecycle()
+    val personList = viewModel.items.collectAsLazyPagingItems()
+    val fetchedState = viewModel.fetchState.collectAsStateWithLifecycle()
+
+    if (fetchedState.value is PersonListScreenUiState.NoData || fetchedState.value is PersonListScreenUiState.CachedDataWithError) {
+        val errorMessage = stringResource(R.string.no_connection)
+        LaunchedEffect(key1 = snackbarHostState) {
+            snackbarHostState.showSnackbar(
+                errorMessage, duration = SnackbarDuration.Indefinite
+            )
+        }
+    }
+
+    Scaffold(snackbarHost = {
+        SnackbarHost(snackbarHostState) {
+            Snackbar(snackbarData = it, contentColor = Color.White)
+        }
+    }) { paddingValues ->
+        PersonListScreenContent(
+            modifier = Modifier.padding(paddingValues),
+            queryState = queryState,
+            onQueryChange = { query -> viewModel.setQuery(query) },
+            onQueryClear = { viewModel.clearQuery() },
+            personList = personList,
+            onItemClick = onItemClick
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun PersonListScreenContent(
+    modifier: Modifier = Modifier,
+    queryState: State<String>,
+    onQueryChange: (String) -> Unit,
+    onQueryClear: () -> Unit,
+    personList: LazyPagingItems<PersonUI>,
     onItemClick: (String) -> Unit
 ) {
-    Column {
-        val query = viewModel.searchQuery.collectAsStateWithLifecycle()
-
+    Column(modifier = modifier) {
         TopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(primary)
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            query = query.value,
-            onQueryChange = { viewModel.setQuery(it) },
+            query = queryState.value,
+            onQueryChange = onQueryChange,
             placeholderText = stringResource(R.string.search_placeholder),
-            onQueryClear = { viewModel.clearQuery() }
+            onQueryClear = onQueryClear
         )
 
-        val personList = viewModel.items.collectAsLazyPagingItems()
 
         val loadingState =
             remember { derivedStateOf { personList.loadState.refresh == LoadState.Loading } }
-        val pullRefreshState = rememberPullRefreshState(refreshing = loadingState.value,
+        val pullRefreshState = rememberPullRefreshState(
+            refreshing = loadingState.value,
             onRefresh = { personList.refresh() })
-
-        val error = viewModel.error.collectAsStateWithLifecycle()
 
         RefreshableList(
             modifier = Modifier.fillMaxSize(),
             personList = personList,
             pullRefreshState = pullRefreshState,
             loadingState = loadingState,
+            queryState = queryState,
             onItemClick = onItemClick
         )
-        if (error.value != null) {
-            Snackbar {
-                Text(text = error.value?.message ?: "NO MESSAGE")
-            }
-        }
-
     }
 }
 
@@ -116,17 +148,49 @@ private fun RefreshableList(
     personList: LazyPagingItems<PersonUI>,
     pullRefreshState: PullRefreshState,
     loadingState: State<Boolean>,
+    queryState: State<String>,
     onItemClick: (id: String) -> Unit
 ) {
-    Box(modifier = modifier.pullRefresh(pullRefreshState)) {
-        Log.d("loadingState", "RefreshableList: ${personList.loadState} ")
-
+    BoxWithConstraints(modifier = modifier.pullRefresh(pullRefreshState)) {
         PullRefreshIndicator(
             modifier = Modifier.align(Alignment.TopCenter),
             refreshing = loadingState.value,
             state = pullRefreshState,
             contentColor = MaterialTheme.colorScheme.primary
         )
+
+        LazyColumn(
+            modifier = Modifier.height(this.maxHeight),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(personList.itemCount, key = personList.itemKey { it.id }) { index ->
+                val person = personList[index]
+                if (person != null) {
+                    PersonItem(modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onItemClick(person.id) }
+                        .padding(16.dp),
+                        name = person.name,
+                        phone = person.phone,
+                        height = person.height)
+                }
+                if (index != personList.itemCount - 1) {
+                    Divider()
+                }
+            }
+            if (personList.loadState.source.append == LoadState.Loading) {
+                item {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        if (queryState.value.isNotBlank() && personList.itemCount == 0) {
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = stringResource(R.string.nothig_was_found),
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
 
         val isLoading =
             personList.loadState.refresh == LoadState.Loading || personList.loadState.source.refresh == LoadState.Loading
@@ -137,43 +201,6 @@ private fun RefreshableList(
             exit = fadeOut()
         ) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
-
-
-        if (personList.itemCount > 0) {
-            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
-                items(personList.itemCount,
-                    key = personList.itemKey { it.id }
-                ) { index ->
-                    val person = personList[index]
-                    if (person != null) {
-                        PersonItem(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onItemClick(person.id) }
-                                .padding(16.dp),
-                            name = person.name,
-                            phone = person.phone,
-                            height = person.height
-                        )
-                    }
-                    if (index != personList.itemCount - 1) {
-                        Divider()
-                    }
-
-                }
-                if (personList.loadState.source.prepend == LoadState.Loading) {
-                    item {
-                        CircularProgressIndicator()
-                    }
-                }
-                if (personList.loadState.source.append == LoadState.Loading) {
-                    item {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
         }
     }
 }

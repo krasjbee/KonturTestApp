@@ -8,7 +8,7 @@ import androidx.room.Query
 @Dao
 interface PersonDao {
 
-    @Query("SELECT * FROM person LIMIT :pageSize OFFSET :page*:pageSize") // @Query("SELECT * FROM items ORDER BY id ASC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM person LIMIT :pageSize OFFSET :page*:pageSize")
     suspend fun getPersonList(pageSize: Int, page: Int): List<PersonLocal>
 
     @Query("SELECT * FROM person WHERE name LIKE '%'|| :searchQuery  ||'%' OR phone LIKE '%'|| :searchQuery ||'%' LIMIT :pageSize OFFSET :page*:pageSize")
@@ -22,4 +22,8 @@ interface PersonDao {
 
     @Query("SELECT * FROM person WHERE id = :personId")
     suspend fun getPersonInfo(personId: String): PersonLocal
+
+    //in case of cache is invalidated it's faster to check if there is any amount of record instead of counting all the data
+    @Query("SELECT count(*) FROM (SELECT * FROM person LIMIT 1)")
+    suspend fun checkIsEmpty(): Int
 }

@@ -8,7 +8,7 @@ import com.krasjbee.konturtestapp.domain.Person
 interface PagingCache<Data> {
     val isExpired: Boolean
 
-    val isEmpty: Boolean
+    suspend fun isCacheEmpty(): Boolean
     suspend fun clear()
 
     //    suspend fun add(dataElement : Data)

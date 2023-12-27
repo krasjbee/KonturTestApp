@@ -35,16 +35,14 @@ class TimedPagingCache @Inject constructor(
         }
     }
 
-    override val isEmpty: Boolean
-        get() = _isCacheEmpty
-
-    private var _isCacheEmpty: Boolean = true
+    override suspend fun isCacheEmpty(): Boolean {
+        return dao.checkIsEmpty() == 0
+    }
 
     override suspend fun clear() {
         Log.i("cacheEvent", "clear: ")
         mutex.withLock {
             dao.clear()
-            _isCacheEmpty = true
         }
     }
 
@@ -53,7 +51,6 @@ class TimedPagingCache @Inject constructor(
             Log.i("cacheEvent", "addAll: ")
             dao.insertAll(collection.map(Person::mapToLocal))
             fetchTimeProvider.lastFetchTime = System.currentTimeMillis()
-            _isCacheEmpty = false
         }
     }
 
