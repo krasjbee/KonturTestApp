@@ -27,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.krasjbee.konturtestapp.ui.entities.PersonUI
+import com.krasjbee.konturtestapp.ui.theme.clickableText
 import com.krasjbee.konturtestapp.ui.theme.grayText
+
+private const val CLICKABLE_TEXT_TAG = "dial"
 
 @Composable
 fun PersonDetailsScreen(
@@ -38,13 +41,13 @@ fun PersonDetailsScreen(
     Column {
         DetailsTopBar(onBackButtonClick = onBackButtonClick)
 
-        when (screenState.value) {
+        when (val detailsState = screenState.value) {
             is PersonDetailsState.PersonDetailsError -> {}
             PersonDetailsState.PersonDetailsLoading -> {}
             is PersonDetailsState.PersonDetailsSuccess ->
                 DetailsSuccess(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    person = (screenState.value as PersonDetailsState.PersonDetailsSuccess).person // TODO: fix
+                    person = detailsState.person
                 )
         }
     }
@@ -61,8 +64,8 @@ private fun DetailsSuccess(
         Text(text = person.name, style = MaterialTheme.typography.titleLarge)
         val clickableText = buildAnnotatedString {
             val text = person.phone
-            withStyle(style = SpanStyle(color = Color(0xff269df7))) {
-                pushStringAnnotation(tag = "dial", annotation = text)
+            withStyle(style = SpanStyle(color = clickableText)) {
+                pushStringAnnotation(tag = CLICKABLE_TEXT_TAG, annotation = text)
                 append(text)
             }
         }
@@ -75,7 +78,6 @@ private fun DetailsSuccess(
                 context.startActivity(intent)
             }
         }, style = MaterialTheme.typography.bodyMedium)
-//        Text(text = person.phone)
         Spacer(modifier = Modifier.size(8.dp))
 
         Text(
