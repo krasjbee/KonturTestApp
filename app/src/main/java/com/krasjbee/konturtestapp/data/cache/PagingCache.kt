@@ -11,9 +11,7 @@ interface PagingCache<Data> {
     suspend fun isCacheEmpty(): Boolean
     suspend fun clear()
 
-    //    suspend fun add(dataElement : Data)
-//
-    suspend fun addAll(collection: List<Data>) // TODO: consider to move to collection
+    suspend fun addAll(collection: List<Data>)
 
     suspend fun getPage(pageSize: Int, page: Int): List<Data>
 

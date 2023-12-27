@@ -14,7 +14,6 @@ import com.krasjbee.konturtestapp.domain.DataHolder
 class ForceRefreshMediator<T : Any>(
     private val pageFetchCall: suspend (force: Boolean, pageSize: Int, page: Int) -> DataHolder<List<T>>,
 ) : RemoteMediator<Int, T>() {
-    // TODO: refactor
     override suspend fun initialize(): InitializeAction {
         //no need to do initial refresh. this logic is encapsulated in cache
         return InitializeAction.SKIP_INITIAL_REFRESH

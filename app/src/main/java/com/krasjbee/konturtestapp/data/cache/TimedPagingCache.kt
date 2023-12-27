@@ -9,8 +9,6 @@ import com.krasjbee.konturtestapp.datasource.database.mapToLocal
 import com.krasjbee.konturtestapp.datasource.database.mapToPerson
 import com.krasjbee.konturtestapp.domain.Person
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 private const val CACHE_EXPIRE_INTERVAL = 60 * 1000
@@ -22,7 +20,6 @@ class TimedPagingCache @Inject constructor(
     private val fetchTimeProvider: PagingCache.FetchTimeProvider
 ) : PagingCache<Person> {
 
-    private val mutex = Mutex()
 
     override val isExpired: Boolean
         get() = System.currentTimeMillis() - fetchTimeProvider.lastFetchTime > CACHE_EXPIRE_INTERVAL
@@ -30,9 +27,7 @@ class TimedPagingCache @Inject constructor(
     override suspend fun getItem(key: Any): Person {
         Log.i("cacheEvent", "getItem: ")
 
-        return mutex.withLock {
-            dao.getPersonInfo(key as String).mapToPerson()
-        }
+        return dao.getPersonInfo(key as String).mapToPerson()
     }
 
     override suspend fun isCacheEmpty(): Boolean {
@@ -41,32 +36,23 @@ class TimedPagingCache @Inject constructor(
 
     override suspend fun clear() {
         Log.i("cacheEvent", "clear: ")
-        mutex.withLock {
-            dao.clear()
-        }
+        dao.clear()
     }
 
     override suspend fun addAll(collection: List<Person>) {
-        mutex.withLock {
-            Log.i("cacheEvent", "addAll: ")
-            dao.insertAll(collection.map(Person::mapToLocal))
-            fetchTimeProvider.lastFetchTime = System.currentTimeMillis()
-        }
+        dao.insertAll(collection.map(Person::mapToLocal))
+        fetchTimeProvider.lastFetchTime = System.currentTimeMillis()
     }
 
     override suspend fun getPage(pageSize: Int, page: Int): List<Person> {
         Log.i("cacheEvent", "getPage pageSize $pageSize page $page")
-        return mutex.withLock {
-            dao.getPersonList(pageSize, page).map(PersonLocal::mapToPerson)
-        }
+        return dao.getPersonList(pageSize, page).map(PersonLocal::mapToPerson)
     }
 
     override suspend fun searchItem(
         searchQuery: String, pageSize: Int, page: Int
     ): List<Person> {
-        return mutex.withLock {
-            dao.searchPersons(searchQuery, pageSize, page).map(PersonLocal::mapToPerson)
-        }
+        return dao.searchPersons(searchQuery, pageSize, page).map(PersonLocal::mapToPerson)
     }
 }
 
