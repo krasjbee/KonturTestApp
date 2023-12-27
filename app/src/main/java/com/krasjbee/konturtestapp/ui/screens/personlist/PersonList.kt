@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Divider
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
@@ -30,6 +29,7 @@ import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -39,8 +39,6 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -51,7 +49,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -215,7 +212,7 @@ private fun TopBar(
     placeholderText: String
 ) {
     Box(modifier = modifier) {
-        TextField(
+        TextField( // using material 2 text field cause material 3 colors did not affect anything for some reason
             modifier = Modifier.fillMaxWidth(),
             value = query,
             onValueChange = onQueryChange,
@@ -228,23 +225,14 @@ private fun TopBar(
                     }
                 }
             } else null,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Search,
-            ),
             placeholder = { Text(text = placeholderText) },
-            // TODO: placeholder colors?
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedPlaceholderColor = grayText,
-                unfocusedPlaceholderColor = grayText,
-                unfocusedIndicatorColor = grayText,
-                focusedLeadingIconColor = grayText,
-                unfocusedLeadingIconColor = grayText,
-                disabledLeadingIconColor = grayText,
-                errorLeadingIconColor = grayText
-
+            colors = androidx.compose.material.TextFieldDefaults.textFieldColors(
+                placeholderColor = grayText,
+                disabledPlaceholderColor = grayText,
+                leadingIconColor = grayText,
+                backgroundColor = Color.White,
+                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
     }
